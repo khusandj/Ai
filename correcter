@@ -1,0 +1,51 @@
+from PIL import Image
+import streamlit as st
+import torchvision.transforms as transforms
+import torch
+from torchvision import models
+
+# Load a pre-trained neural network
+model = models.resnet18(pretrained=True)
+model.eval()
+
+# Streamlit app setup
+st.title("AI or Real Image Checker")
+st.write("Upload an image, and this app will attempt to determine if it is AI-generated or real.")
+
+# Function to preprocess the image
+def preprocess_image(image):
+    preprocess = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize(
+            mean=[0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225]
+        ),
+    ])
+    return preprocess(image).unsqueeze(0)
+
+# Placeholder for uploaded image
+uploaded_image = st.file_uploader("Choose an image file", type=["jpg", "jpeg", "png"])
+
+if uploaded_image is not None:
+    image = Image.open(uploaded_image)
+    st.image(image, caption="Uploaded Image", use_column_width=True)
+
+    # Preprocess the image
+    input_tensor = preprocess_image(image)
+
+    # Perform inference
+    with torch.no_grad():
+        output = model(input_tensor)
+
+    # Placeholder logic for decision (replace with a real AI/real classifier model)
+    confidence_real = torch.softmax(output, dim=1)[0, 0].item()
+    confidence_ai = torch.softmax(output, dim=1)[0, 1].item()
+
+    if confidence_real > confidence_ai:
+        st.success(f"This image appears to be real with {confidence_real * 100:.2f}% confidence.")
+    else:
+        st.warning(f"This image appears to be AI-generated with {confidence_ai * 100:.2f}% confidence.")
+
+st.write("Note: This is a demonstration app and may not be 100% accurate. Use it for experimental purposes.")
+
